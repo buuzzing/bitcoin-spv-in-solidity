@@ -1,0 +1,7 @@
+{
+  "name": "bitcoin-spv-in-solidity",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
+    "hardhat": "^2.22.5"
+  }
+}
