@@ -17,9 +17,9 @@ contract Light is ILight {
     mapping(uint32 => bytes32) private _heights;
 
     // 最新区块高度
-    uint32 latestHeight;
+    uint32 private latestHeight;
     // 最新区块哈希
-    bytes32 latestHash;
+    bytes32 private latestHash;
 
     /**
      * 在创建合约时指定创世区块头（信任根）
