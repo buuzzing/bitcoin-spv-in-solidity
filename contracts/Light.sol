@@ -47,7 +47,7 @@ contract Light is ILight {
 
         // 如果前序区块不存在，返回失败
         bytes32 prevBlockHash = header.extractPrevBlock();
-        require(_headers[prevBlockHash] > 0, Error.BLOCK_EXISTS);
+        require(_headers[prevBlockHash] > 0, Error.PREV_BLOCK_NOT_FOUND);
 
         // 对区块头做工作量证明验证
         uint256 target = header.extractTarget();
