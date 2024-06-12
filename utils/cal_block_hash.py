@@ -3,7 +3,7 @@ from hashlib import sha256
 import json
 
 
-def little_endian(data: str) -> str:
+def convert_endian(data: str) -> str:
     return "".join(reversed([data[i : i + 2] for i in range(0, len(data), 2)]))
 
 
@@ -18,6 +18,6 @@ if __name__ == "__main__":
 
     for block_number, header in data.items():
         print(f"Block number: {block_number}")
-        block_hash = little_endian(cal_hash(header).hexdigest())
+        block_hash = convert_endian(cal_hash(header).hexdigest())
         print(f"Block hash: {block_hash}")
         print()

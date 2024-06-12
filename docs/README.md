@@ -56,11 +56,17 @@ fe9f0864 ........................... Nonce
 A  B  C  D  E .........Transactions
 ```
 
+> 需要注意的是，Merkle Root 的计算过程中同样使用小端序
+>
+> 而在区块链浏览器上查询的交易列表展示的为大端序，因此在计算时需要注意将查询到的 txid 转换为小端序
+>
+> 具体参见一个计算实例：`utils/cal_merkle_root.py`
+
 参考：[Bitcoin Develop: Transaction Data](https://developer.bitcoin.org/devguide/block_chain.html#transaction-data)
 
 ## 验证者如何存储信任根
 
-由线下节点提交一个 80 bytes 长度的 row block header，验证者（链上合约）解析出版本、前块哈希、默克尔根、时间戳、压缩难度值和挖矿随机数（参见[比特币区块头](./utils/README.md)）
+由线下节点提交一个 80 bytes 长度的 row block header，验证者（链上合约）解析出版本、前块哈希、默克尔根、时间戳、压缩难度值和挖矿随机数（参见[区块头](#区块头)）
 
 验证者对上述数据进行检查：
 
