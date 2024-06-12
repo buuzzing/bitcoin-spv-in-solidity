@@ -30,7 +30,7 @@ describe("Light Client", () => {
                 Validate: validate_addr,
             },
         });
-        // @dev ts 中传入的 bytes like 类型的十六进制串必须以 0x 开头
+        // @dev ts 中传入的 bytesLike 类型的十六进制串必须以 0x 开头
         const genesis_header = "0x" + utils.getRawHeaderFromHeight(BlockInfo.GENESIS_HEIGHT);
         const light = await LIGHT.deploy(genesis_header, BlockInfo.GENESIS_HEIGHT);
 
@@ -120,5 +120,80 @@ describe("Light Client", () => {
                 expect(latest_height).to.equal(120098);
             });
         });
+
+        describe("Events", () => {
+            it("Should emit a storeHeader event", async () => {
+                const { light } = await loadFixture(deployFixture);
+                // 存储的创世纪块为 #120097，获取 #120098
+                const header = "0x" + utils.getRawHeaderFromHeight(120098);
+                const header_hash = "0x" + utils.calculateBlockHash(header.slice(2));
+
+                await expect(light.submitBlockHeader(header))
+                    .to.emit(light, "storeHeader")
+                    .withArgs(header_hash, 120098);
+            });
+        });
+    });
+
+    describe("Get Block Hash", () => {
+        it("Should revert if the block does not exist", async () => {
+            const { light } = await loadFixture(deployFixture);
+            // 存储的创世纪块为 #120097，尝试查询 #120098
+            await expect(light.getBlockHash(120098)).to.be.revertedWith(ErrorCode.BLOCK_WITH_HEIGHT_NOT_FOUND);
+        });
+
+        it("Should return the block hash", async () => {
+            const { light } = await loadFixture(deployFixture);
+            // 存储的创世纪块为 #120097，提交 #120098
+            const header = "0x" + utils.getRawHeaderFromHeight(120098);
+            const header_hash = "0x" + utils.calculateBlockHash(header.slice(2));
+
+            await light.submitBlockHeader(header);
+
+            const block_hash = await light.getBlockHash(120098);
+            expect(block_hash).to.equal(header_hash);
+        });
+    });
+
+    describe("Get Block Height", () => {
+        it("Should revert if the block does not exist", async () => {
+            const { light } = await loadFixture(deployFixture);
+            // 存储的创世纪块为 #120097，尝试查询 #120098
+            const header = utils.getRawHeaderFromHeight(120098);
+            const header_hash = "0x" + utils.calculateBlockHash(header);
+
+            await expect(light.getBlockHeight(header_hash)).to.be.revertedWith(ErrorCode.BLOCK_WITH_HASH_NOT_FOUND);
+        });
+
+        it("Should return the block height", async () => {
+            const { light } = await loadFixture(deployFixture);
+            // 存储的创世纪块为 #120097，提交 #120098
+            const header = "0x" + utils.getRawHeaderFromHeight(120098);
+            const header_hash = "0x" + utils.calculateBlockHash(header.slice(2));
+
+            await light.submitBlockHeader(header);
+
+            const block_height = await light.getBlockHeight(header_hash);
+            expect(block_height).to.equal(120098);
+        });
+    });
+
+    describe("Get Latest Block", () => {
+        it("Should return the latest block", async () => {
+            const { light } = await loadFixture(deployFixture);
+            // 存储的创世纪块为 #120097，提交 #120098
+            const header = "0x" + utils.getRawHeaderFromHeight(120098);
+            const header_hash = "0x" + utils.calculateBlockHash(header.slice(2));
+
+            await light.submitBlockHeader(header);
+
+            const [latest_header, latest_height] = await light.getLatestBlock();
+            expect(latest_header).to.equal(header_hash);
+            expect(latest_height).to.equal(120098);
+        });
+    });
+
+    describe("Verify Transition", () => {
+        
     });
 });
