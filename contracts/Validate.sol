@@ -23,14 +23,15 @@ library Validate {
             offset += 32;
 
             // 根据为此决定是左拼接还是右拼接
-            if (index % 2 == 0) {
+            // coinbase 作为 0 号交易
+            if (index % 2 == 1) {
                 t_root = Utils.connectHash(pair, t_root).hash();
             } else {
                 t_root = Utils.connectHash(t_root, pair).hash();
             }
 
             // 计算完成，沿 merkle path 向上一层
-            index = (index + 1) / 2;
+            index = index / 2;
         }
 
         return root == t_root;
