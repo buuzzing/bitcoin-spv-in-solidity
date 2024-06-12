@@ -13,7 +13,7 @@ library Utils {
     ) internal pure returns (uint32) {
         uint32 versionBE = 0;
         for (uint8 i = 0; i < 4; i++) {
-            versionBE = (versionBE << 8) | uint8(header[i]);
+            versionBE += uint32(uint8(header[i])) << (8 * i);
         }
         return versionBE;
     }
@@ -58,7 +58,7 @@ library Utils {
     ) internal pure returns (uint32) {
         uint32 timestampBE = 0;
         for (uint8 i = 0; i < 4; i++) {
-            timestampBE = (timestampBE << 8) | uint8(header[i + 68]);
+            timestampBE += uint32(uint8(header[i + 68])) << (8 * i);
         }
         return timestampBE;
     }
@@ -74,7 +74,7 @@ library Utils {
         uint256 targetBE;
         uint32 bits = 0;
         for (uint8 i = 0; i < 4; i++) {
-            bits = (bits << 8) | uint8(header[i + 72]);
+            bits += uint32(uint8(header[i + 72])) << (8 * i);
         }
         targetBE = (bits & 0x00ffffff) * 2 ** (8 * ((bits >> 24) - 3));
         return targetBE;
@@ -88,7 +88,7 @@ library Utils {
     function extractNonce(bytes memory header) internal pure returns (uint32) {
         uint32 nonceBE = 0;
         for (uint8 i = 0; i < 4; i++) {
-            nonceBE = (nonceBE << 8) | uint8(header[i + 76]);
+            nonceBE += uint32(uint8(header[i + 76])) << (8 * i);
         }
         return nonceBE;
     }
