@@ -82,4 +82,94 @@ export function changeHeaderNonce(blockHeader: string): string {
     return newHeader;
 }
 
-export * as utils from "./utils"
+/**
+ * 计算哈希
+ * @param data 由十六进制串转换得到的 Buffer
+ * @returns data 的 SHA-256 哈希值
+ */
+function calculateHash(data: Buffer): Buffer {
+    const firstHash = sha256(data);
+    const secondHash = sha256(firstHash);
+
+    return secondHash;
+}
+
+/**
+ * Merkle Tree 向上计算一层的哈希值
+ * @param txids 当前层的哈希值
+ * @returns 上一层的哈希值
+ */
+function calculateUpper(txids: string[]): string[] {
+    if (txids.length === 1) {
+        return txids;
+    }
+
+    // 如果当前层的哈希值个数为奇数，复制最后一个哈希值
+    if (txids.length % 2 === 1) {
+        txids.push(txids[txids.length - 1]);
+    }
+
+    let upper_hash: string[] = [];
+    for (let i = 0; i < txids.length; i += 2) {
+        // 将大端序转换为小端序，再计算哈希
+        const tx_l = Buffer.from(txids[i], 'hex').reverse();
+        const tx_r = Buffer.from(txids[i + 1], 'hex').reverse();
+        const data = Buffer.concat([tx_l, tx_r]);
+        const hash = calculateHash(data);
+
+        // 将计算出的哈希转换为大端序，再添加到新的数组中
+        upper_hash.push(Buffer.from(hash).reverse().toString('hex'));
+    }
+
+    return upper_hash;
+}
+
+/**
+ * 本测试中取 #120099 块的 #5 交易，并为其生成一个 Merkle proof
+ * 交易哈希为 e0a52b5f17e5e256076d4050290a1f36268ab4a629a10f563dc4d32b3f03f236
+ * #120099 块中一共有 10 个交易，因此构建的 Merkle Tree 为
+ *                  ABCDEFGHIJIJIJIJ
+ *                  /            \
+ *           ABCDEFGH            IJIJIJIJ .... 同理
+ *          /       \              /
+ *      ABCD        EFGH        IJIJ ......... IJ 与自己拼接
+ *     /    \      /    \      /
+ *    AB    CD    EF    GH    IJ
+ *   /  \  /  \  /  \  /  \  /  \
+ *   A  B  C  D  E  F  G  H  I  J ............ txid
+ *   |  |  |  |  |  |  |  |  |  |
+ *   0  1  2  3  4  5  6  7  8  9 ............ raw transaction
+ * 需要验证的交易为 F，其 Merkle proof 为 [E, GH, ABCD, IJIJIJIJ]
+ * @returns 一个包含交易哈希和 Merkle proof 的串
+ */
+export function makeTxWithProof(): [string, string] {
+    let txHash: string;
+    let proof: string[] = [];
+
+    // 从 block_info.json 文件中获取 #120099 块的 txid 列表
+    const data = fs.readFileSync('block_info.json', 'utf8');
+    const blockInfo = JSON.parse(data);
+    let txLists = blockInfo["120099"].tx;
+    let txIndex = 5;
+
+    txHash = txLists[txIndex];
+
+    while (txLists.length > 1) {
+        // 这里的 txIndex 为在当前层的索引
+        if (txIndex % 2 === 1) {
+            // 如果为奇数，即在一对节点中的右边那个，proof 中需要左侧那个
+            proof.push(txLists[txIndex - 1]);
+        } else {
+            // 否则即在一对节点中的左边那个，proof 中需要右侧那个
+            proof.push(txLists[txIndex + 1]);
+        }
+
+        // 计算上一层的哈希值，并更新 txIndex
+        txIndex = Math.floor(txIndex / 2);
+        txLists = calculateUpper(txLists);
+    }
+
+    return [txHash, proof.join('')];
+}
+
+export * as utils from "./utils";

@@ -31,6 +31,7 @@ describe("Light Client", () => {
             },
         });
         // @dev ts 中传入的 bytesLike 类型的十六进制串必须以 0x 开头
+        // @dev 以下的 string 到 bytesLike 操作同理
         const genesis_header = "0x" + utils.getRawHeaderFromHeight(BlockInfo.GENESIS_HEIGHT);
         const light = await LIGHT.deploy(genesis_header, BlockInfo.GENESIS_HEIGHT);
 
@@ -193,7 +194,84 @@ describe("Light Client", () => {
         });
     });
 
-    describe("Verify Transition", () => {
-        
+    describe("Verify Transaction", () => {
+        it("Should revert if the requested block does not exist", async () => {
+            const { light } = await loadFixture(deployFixture);
+            // 存储的创世纪块为 #120097，提交 #120098
+            const header = "0x" + utils.getRawHeaderFromHeight(120098);
+            await light.submitBlockHeader(header);
+            // 不提交 #120099，直接尝试验证
+
+            const height = 120099;
+            const tx_index = 5;
+            const [_tx_hash, _proof] = utils.makeTxWithProof();
+            const tx_hash = "0x" + _tx_hash;
+            const proof = "0x" + _proof;
+
+            await expect(light.verityTx(height, tx_index, tx_hash, header, proof))
+                .to.be.revertedWith(ErrorCode.BLOCK_WITH_HEIGHT_NOT_FOUND);
+        });
+
+        it("Should revert if the block hash does not match", async () => {
+            const { light } = await loadFixture(deployFixture);
+            // 存储的创世纪块为 #120097，提交 #120098
+            let header = "0x" + utils.getRawHeaderFromHeight(120098);
+            await light.submitBlockHeader(header);
+            // 提交 #120099
+            header = "0x" + utils.getRawHeaderFromHeight(120099);
+            await light.submitBlockHeader(header);
+
+            // 修改 #120099 的块头（通过改 nonce 值）
+            const fake_header = "0x" + utils.changeHeaderNonce(utils.getRawHeaderFromHeight(120099));
+
+            const height = 120099;
+            const tx_index = 5;
+            const [_tx_hash, _proof] = utils.makeTxWithProof();
+            const tx_hash = "0x" + _tx_hash;
+            const proof = "0x" + _proof;
+
+            await expect(light.verityTx(height, tx_index, tx_hash, fake_header, proof))
+                .to.be.revertedWith(ErrorCode.BLOCK_WITH_HASH_NOT_FOUND);
+        });
+
+        it("Should fail if the merkle proof is invalid", async () => {
+            const { light } = await loadFixture(deployFixture);
+            // 存储的创世纪块为 #120097，提交 #120098
+            let header = "0x" + utils.getRawHeaderFromHeight(120098);
+            await light.submitBlockHeader(header);
+            // 提交 #120099
+            header = "0x" + utils.getRawHeaderFromHeight(120099);
+            await light.submitBlockHeader(header);
+
+            const height = 120099;
+            const tx_index = 5;
+            const [_tx_hash, _proof] = utils.makeTxWithProof();
+            const tx_hash = "0x" + _tx_hash;
+            // 修改 proof 中的一个字节
+            const proof = "0x" + _proof.slice(0, 2) + "00" + _proof.slice(4);
+
+            const result = await light.verityTx(height, tx_index, tx_hash, header, proof);
+            expect(result).to.equal(false);
+        });
+
+        it("Should verify the transaction", async () => {
+            const { light } = await loadFixture(deployFixture);
+            // 存储的创世纪块为 #120097，提交 #120098
+            let header = "0x" + utils.getRawHeaderFromHeight(120098);
+            await light.submitBlockHeader(header);
+            // 提交 #120099
+            header = "0x" + utils.getRawHeaderFromHeight(120099);
+            await light.submitBlockHeader(header);
+
+            // 测试使用 #120099 块的 #5 交易，参见 utils.makeTxWithProof 函数
+            const height = 120099;
+            const tx_index = 5;
+            const [_tx_hash, _proof] = utils.makeTxWithProof();
+            const tx_hash = "0x" + _tx_hash;
+            const proof = "0x" + _proof;
+
+            const result = await light.verityTx(height, tx_index, tx_hash, header, proof);
+            expect(result).to.equal(true);
+        });
     });
 });

@@ -6,6 +6,7 @@ import {Utils} from "./Utils.sol";
 
 library Validate {
     using Utils for bytes;
+    using Utils for bytes32;
 
     function prove(
         bytes32 txid,
@@ -22,8 +23,13 @@ library Validate {
             pair = proof.extractProof(offset);
             offset += 32;
 
+            // 将大端序转换为小端序，再计算哈希
+            t_root = t_root.convertEndian32();
+            pair = pair.convertEndian32();
+
             // 根据为此决定是左拼接还是右拼接
             // coinbase 作为 0 号交易
+            // 计算得到的新 t_root 已经转换为大端序
             if (index % 2 == 1) {
                 t_root = Utils.connectHash(pair, t_root).hash();
             } else {
