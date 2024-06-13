@@ -132,5 +132,5 @@ bytes proof;      // merkle path 上需要的哈希值
 2. 根据 `height` 查询块头哈希，与给定的 `header` 取哈希进行比较；
 3. 令 `txid` 作为 `H` 的初始值；
 4. 每次从 `proof` 取出一个 bytes32 的哈希值（从左向右），根据 `index` 值与 `H` 进行左拼接或右拼接，将拼接结果计算哈希（比特币中为 **double sha256**）后重新赋值给 `H`；
-5. 重复步骤 4 直至 `proof` 被取空，如果此步骤发生错误（例如 `proof` 不是由整数个 bytes32 构成的)，返回 false；
+5. 重复步骤 4 直至 `proof` 被取空，如果此步骤发生错误（例如 `proof` 不是由整数个 bytes32 构成的），返回 false；
 6. 由 `header` 解析出 Merkle Root，记 `root`。判断 `H` 和 `root` 是否相等，相等返回 true，验证通过，否则返回 false
